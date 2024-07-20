@@ -63,12 +63,20 @@ class HebbianMultiLayerPerceptron(MultiLayerPerceptron):
           y, num_classes=self.num_outputs
           ).float()
 
+    # y_pred = HebbianFunction.apply(
+    #     h,
+    #     self.lin2.weight,
+    #     self.lin2.bias,
+    #     self.softmax,
+    #     targets
+    # )
+
     y_pred = HebbianFunction.apply(
-        h,
-        self.lin2.weight,
-        self.lin2.bias,
-        self.softmax,
-        targets
+        X.reshape(-1, self.num_inputs),
+        self.lin1.weight,
+        self.lin1.bias,
+        self.activation,
     )
+
 
     return y_pred

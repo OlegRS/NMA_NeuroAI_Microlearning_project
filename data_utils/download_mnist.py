@@ -5,7 +5,7 @@ import torchvision
 import contextlib
 import io
 
-def download_mnist(train_prop=0.8, keep_prop=0.5):
+def download_mnist(train_prop=0.8, keep_prop=.5):
 
   valid_prop = 1 - train_prop
 
@@ -43,7 +43,7 @@ def download_mnist(train_prop=0.8, keep_prop=0.5):
   return train_set, valid_set, test_set
 
 #########################################
-def load_mnist(train_prop=0.8, keep_prop=0.5):
+def load_mnist(train_prop=0.8, keep_prop=.5):
 
   valid_prop = 1 - train_prop
 

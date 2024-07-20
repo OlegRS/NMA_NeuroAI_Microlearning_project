@@ -84,8 +84,8 @@ HebbianMLP_3cls, Hebbian_results_dict_3cls = train_model_extended(
     train_set=train_set, valid_set=valid_set,
     model_type="hebbian",
     keep_num_classes=3,
-    num_epochs=21,
-    lr=[HEBB_LR / 4, HEBB_LR * 8], # learning rate for each layer
+    num_epochs=100,
+    lr=[HEBB_LR/4/10, HEBB_LR*8/10], # learning rate for each layer
 )
 
 plot_results(Hebbian_results_dict_3cls, num_classes=3)

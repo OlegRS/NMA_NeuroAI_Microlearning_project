@@ -238,8 +238,8 @@ def train_model_extended(train_set, valid_set,
     if len(lr) != 2:
       raise ValueError("If 'lr' is a list, it must be of length 2.")
     optimizer = BasicOptimizer([
-        {"params": MLP.lin1.parameters(), "lr": lr[0]},
-        {"params": MLP.lin2.parameters(), "lr": lr[1]},
+        {"params": MLP.lin1.parameters(), "lr": lr[0]}#,
+        #{"params": MLP.lin2.parameters(), "lr": lr[1]},
     ])
   else:
     optimizer = BasicOptimizer(MLP.parameters(), lr=lr)

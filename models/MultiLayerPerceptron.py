@@ -56,7 +56,7 @@ class MultiLayerPerceptron(torch.nn.Module):
     # default weights (and biases, if applicable) initialization is used
     # see https://github.com/pytorch/pytorch/blob/main/torch/nn/modules/linear.py
     self.lin1 = torch.nn.Linear(num_inputs, num_hidden, bias=bias)
-    self.lin2 = torch.nn.Linear(num_hidden, num_outputs, bias=bias)
+    # self.lin2 = torch.nn.Linear(num_hidden, num_outputs, bias=bias)
 
     self._store_initial_weights_biases()
 
@@ -70,10 +70,10 @@ class MultiLayerPerceptron(torch.nn.Module):
     """
 
     self.init_lin1_weight = self.lin1.weight.data.clone()
-    self.init_lin2_weight = self.lin2.weight.data.clone()
+    # self.init_lin2_weight = self.lin2.weight.data.clone()
     if self.bias:
       self.init_lin1_bias = self.lin1.bias.data.clone()
-      self.init_lin2_bias = self.lin2.bias.data.clone()
+      # self.init_lin2_bias = self.lin2.bias.data.clone()
 
   def _set_activation(self):
     """
@@ -109,7 +109,8 @@ class MultiLayerPerceptron(torch.nn.Module):
     """
 
     h = self.activation(self.lin1(X.reshape(-1, self.num_inputs)))
-    y_pred = self.softmax(self.lin2(h))
+    # y_pred = self.softmax(self.lin2(h))
+    y_pred = self.softmax(h)
     return y_pred
 
   def forward_backprop(self, X):
