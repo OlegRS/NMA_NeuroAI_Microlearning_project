@@ -64,3 +64,18 @@ accuracy_test = 1 - np.count_nonzero(predictions_test - np.array(labels_test))/l
 print("accuracy_train=", accuracy_train)
 print("accuracy_validation=", accuracy_val)
 print("accuracy_test=", accuracy_test)
+
+### "Receptive fields" (generation from labels)
+def generate_from_label(n_classes, label):
+    output_layer_activity = target_output_from_label(n_classes, label)
+    return (W.T @ output_layer_activity).reshape(28,28)
+
+fig, axs = plt.subplots(ncols=N_classes, figsize=(10*1.7, 1.3*1.7))
+for i in range(N_classes):
+    axs[i].imshow(generate_from_label(N_classes, i), cmap='gray')
+    axs[i].set_xticks([])
+    axs[i].set_yticks([])
+
+fig.suptitle('Learned receptive fields of the output units', fontsize=20)
+plt.tight_layout()
+plt.show()
