@@ -206,4 +206,11 @@ title = f'Weights (top:Hebbian, bottom:SGD); cosine_similarity={cos:.3f}'
 fig_weights.suptitle(title, fontsize=19)
 
 plt.tight_layout()
+
+fig.patch.set_facecolor('none')
+fig_weights.patch.set_facecolor('none')
+
+fig.savefig('./notes/img/reverse_inference.pdf', bbox_inches='tight', dpi=300)
+fig_weights.savefig('./notes/img/flattened_weight_matrices.pdf', bbox_inches='tight', dpi=300)
+
 plt.show()

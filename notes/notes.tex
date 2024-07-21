@@ -1,0 +1,144 @@
+\documentclass[a4paper, 11pt]{article}
+
+\usepackage[top=112pt, bottom=112pt, left=90pt, right=85pt]{geometry}
+\usepackage{geometry, amssymb, csquotes, amsmath, graphicx, mathtools, amsthm, calc, accents} 
+\usepackage[hidelinks]{hyperref}
+\usepackage[utf8]{inputenc}
+\usepackage{xcolor}
+\usepackage{todonotes}
+
+\newcommand{\rem}[2][noinline]{\todo[#1, color=gray!20!white,size=\footnotesize]{\texttt{Rem}: #2}}
+\newcommand{\doubletilde}[1]{\tilde{\raisebox{0pt}[0.85\height]{$\tilde{#1}$}}}
+\newcommand{\tripletilde}[1]{\tilde{\raisebox{0pt}[0.85\height]{$\doubletilde{#1}$}}}
+
+\newtheorem{prop}{Proposition}
+\newtheorem{definition}{Definition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theor}{Theorem}
+\newtheorem{cor}{Corollary}
+\newtheorem{conjecture}{Conjecture}
+
+\DeclareMathOperator\artanh{artanh}
+\DeclareMathOperator\tr{tr}
+
+\hypersetup{
+  urlcolor = black,
+  citecolor = black,
+  pdftitle = {notes},
+  pdfsubject = {notes},
+  pdfpagemode = UseNone
+}
+
+\newcommand\underl[2]{\mathrel{\mathop{#2}\limits_{#1}}}
+
+\title{\textbf{Neuromatch NeuroAI Microlearning project}}
+\date{\today}
+\author{NevroA6 crew}
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\end{abstract}
+
+\tableofcontents
+
+\section{Single-layer Hebbian network vs. softmax classifier}
+In this section we compare the performances and the weight matrices of the single-layer models trained by {\it Hebbian learning} and the {\it stochastic gradient descent} (SGD) on the subset of MNIST hand written digits dataset.
+\subsection{Hebbian learning}
+In the Hebbian learning setting the weights are set as follows
+\begin{equation} \label{Hebbian_weights}
+  \mathbf W = \eta\sum_{\alpha=1}^{N_d} \mathbf t^{(\alpha)} \otimes \mathbf x^{(\alpha)},
+\end{equation}
+where $\mathbf x^{(\alpha)}$ is the $28\times 28=784$-dimensional input at datapoint $\alpha$, $\mathbf t^{(\alpha)}$ is the corresponding one-hot encoded target output and $\otimes$ is stands for the outer product defined as $(\mathbf a\otimes \mathbf b)_{ij} = a_ib_j$, ${N_d}$ is the number of training samples and $\eta$ is the learning rate (which has no effect on the predictions in this setting).
+
+The activation received at the output layer computed as $\mathbf y = \mathbf W\mathbf x$ is thus given by
+\begin{equation} \label{1-layer_Hebbian_output}
+  \mathbf y = \eta \sum_{\alpha=1}^{N_d}\mathbf t^{(\alpha)}(\mathbf x^{(\alpha)},\mathbf x),
+\end{equation}
+where $\mathbf x$ is the input and $(\mathbf x^{(\alpha)},\mathbf x)$ is the dot product of the current input $\mathbf x$ with the input at the datapoint $\alpha$. The above expression (\ref{1-layer_Hebbian_output}) is a weighted average of the target outputs, where the weights are proportional to the cosine similarity between the current input and the corresponding input in the data.
+
+Note that a similar expression to expression (\ref{1-layer_Hebbian_output}) is valid when the network is reversed, i.e. $\mathbf x = \mathbf W^T\mathbf y$
+\begin{equation}
+  \mathbf x = \eta\sum_{\alpha=1}^{N_d}\mathbf x^{(\alpha)}(\mathbf t^{(\alpha)},\mathbf y).
+\end{equation}
+The images resulting from such {\it reverse inference}\footnote{\textcolor{red}{I don't know the proper name for this.}} is shown in Fig.\ref{fig:reverse_inference}, and it is easy to see that the inputs generated this way are simply the averaged inputs for the corresponding classes.
+
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=16cm]{img/flattened_weight_matrices.pdf}
+  \end{center}  
+  \caption{Vertical stack of the different rows of this image reproduces the reverse activations from Fig.\ref{fig:reverse_inference}.}
+  \label{fig:flattened_weight_matrices}
+\end{figure}
+
+
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=16cm]{img/reverse_inference.pdf}
+  \end{center}  
+  \caption{The results form running the network in reverse, i.e. $\mathbf x = \mathbf W^T\mathbf y$ from the one-hot encoded target class labels for the networks trained by Hebbian (top panels) learning and SGD (bottom panels).}
+  \label{fig:reverse_inference}
+\end{figure}
+
+To find the predicted probabilities of different classes, one can apply softmax to the output, but to find the predicted label it is enough to pick the output unit with the highest activation (as the corresponding class will have the highest predicted probability). Typical accuracies of the network used this way are shown in Fig.\ref{accuracies_of_Hebbian_model}, where accuracy is defined as
+\begin{equation}
+  (\text{Accuracy}) = 1 - \frac{(\text{Number of misclassified inputs})}{(\text{Total number of data points})}.
+\end{equation}
+
+\begin{figure}
+    \centering
+    \begin{minipage}{.33\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img/Hebbian_training_results_1.png}
+        % \caption{}
+    \end{minipage}\hfill
+    \begin{minipage}{.33\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img/Hebbian_training_results_2.png}
+        % \caption{}
+    \end{minipage}\hfill
+    \begin{minipage}{.33\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img/Hebbian_training_results_3.png}
+        % \caption{}
+    \end{minipage}
+    \caption{Performances of the Hebbian network on different subsets of MNIST hand written digits dataset.}
+    \label{accuracies_of_Hebbian_model}
+\end{figure}
+
+Note that expression (\ref{Hebbian_weights}) can be regarded as a single-epoch online learning (learning with batch size of one) where the output layer is clamped to the one-hot encoded targets. In this setting there is no need to train the network for more than one epoch, as this does not affect the performance.
+
+\textcolor{blue}{It is interesting what kind of loss function is minimised by this Hebbian learning procedure... Maybe to train it as FF with only positive data and see what comes out...}
+
+\subsection{Softmax classifier}
+The output layer now computes the softmax function defined as
+\begin{equation} \label{softmax_definition}
+  \sigma_i = \frac{\mathrm e^{l_i}}{\sum_{k=1}^{N_c}\mathrm e^{l_k}}, 
+\end{equation}
+where the logits $l_i$ are given as inputs to the output layer $\mathbf l = \mathbf W \mathbf x$, and $N_c$ is the number of different classes ($10$ in this case). Substituting expression \ref{softmax_definition} to the cross-entropy loss
+\begin{equation}
+  \mathcal L(\boldsymbol\sigma, \mathbf t) = -\frac{1}{{N_d}}\sum_{\alpha=1}^{N_d}\mathbf t^{(\alpha)}\log\boldsymbol\sigma^{(\alpha)}
+\end{equation}
+gives
+\begin{equation*}
+  \mathcal L(\boldsymbol\sigma, \mathbf t) = -\frac{1}{{N_d}}\sum_{\alpha=1}^{N_d}\mathbf t^{(\alpha)}\left[l_i - \log\left(\sum_{k=1}^{N_c}\mathrm e^{l_k}\right)\right],
+\end{equation*}
+whose partial derivatives with respect to the weights are given by
+\begin{equation}
+  \frac{\partial \mathcal L}{\partial W_{ij}} = \frac{1}{{N_d}}\sum_{\alpha=1}^{N_d}\left(t_i^{(\alpha)} - \sigma_i^{(\alpha)}\right)x_j^{(\alpha)},
+\end{equation}
+or in a vector form
+\begin{equation}\label{cross-entropy_derivative}
+  \frac{\partial \mathcal L}{\partial \mathbf W} = \frac{1}{{N_d}}\sum_{\alpha=1}^{N_d}\left(\mathbf t^{(\alpha)} - \boldsymbol\sigma^{(\alpha)}\right)\otimes\mathbf x^{(\alpha)}.
+\end{equation}
+From expression (\ref{cross-entropy_derivative}) it is clear that the weight updates obtained using gradient descent (without batching) are given by
+\begin{equation}
+  \Delta\mathbf W = \eta\frac{\partial \mathcal L}{\partial \mathbf W} = \frac{\eta}{{N_d}}\sum_{\alpha=1}^{N_d}\mathbf t^{(\alpha)}\otimes\mathbf x^{(\alpha)} - \frac{\eta}{{N_d}}\sum_{\alpha=1}^{N_d}\boldsymbol\sigma^{(\alpha)}\otimes\mathbf x^{(\alpha)},
+\end{equation}
+where the first term in the above expression corresponds to the Hebbian component of the weight update while the second introduces some bias that grows with the network's performance compensating Hebbian component once the optimal performance is reached. In contrast, in pure Hebbian learning, the weights grow indefinitely, \textcolor{red}{therefore, the bias of Hebbian learning depends on how it is regularised.}
+
+
+%% \bibliographystyle{unsrt}
+%% \bibliography{bibliography.bib}
+
+\end{document}
