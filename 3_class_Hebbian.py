@@ -85,10 +85,10 @@ HebbianMLP_3cls, Hebbian_results_dict_3cls = train_model_extended(
     model_type="hebbian",
     keep_num_classes=3,
     num_epochs=100,
-    lr=[HEBB_LR/4/10, HEBB_LR*8/10], # learning rate for each layer
+    lr=[HEBB_LR/4*10, HEBB_LR*8*10], # learning rate for each layer
 )
 
 plot_results(Hebbian_results_dict_3cls, num_classes=3)
 plot_scores_per_class(Hebbian_results_dict_3cls, num_classes=3)
-plot_weights(HebbianMLP_3cls)
+# plot_weights(HebbianMLP_3cls)
 plt.show()

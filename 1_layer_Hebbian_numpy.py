@@ -69,6 +69,7 @@ print("accuracy_test=", accuracy_test)
 def generate_from_label(n_classes, label):
     output_layer_activity = target_output_from_label(n_classes, label)
     return (W.T @ output_layer_activity).reshape(28,28)
+    # return (weights_numpy.T @ output_layer_activity).reshape(28,28)
 
 fig, axs = plt.subplots(ncols=N_classes, figsize=(10*1.7, 1.3*1.7))
 for i in range(N_classes):
@@ -79,3 +80,6 @@ for i in range(N_classes):
 fig.suptitle('Learned receptive fields of the output units', fontsize=20)
 plt.tight_layout()
 plt.show()
+
+# Cosyne similarity
+# (weights_numpy.flatten() @ W.flatten())/(np.linalg.norm(weights_numpy.flatten(), ord=2)*np.linalg.norm(W.flatten(), ord=2))
