@@ -18,6 +18,24 @@
 \newtheorem{cor}{Corollary}
 \newtheorem{conjecture}{Conjecture}
 
+\usepackage{tcolorbox}
+\usepackage{lipsum} % for dummy text
+
+% Define a custom style for the question box
+\tcbset{
+  myquestionbox/.style={
+    colback=cyan!10!white,
+    colframe=cyan!50!black,
+    coltitle=black,
+    fonttitle=\bfseries,
+    title=Something to try/think about,
+    boxrule=0.5mm,
+    sharp corners,
+    enhanced,
+    width=\textwidth
+  }
+}
+
 \DeclareMathOperator\artanh{artanh}
 \DeclareMathOperator\tr{tr}
 
@@ -43,7 +61,7 @@
 \tableofcontents
 
 \section{Single-layer Hebbian network vs. softmax classifier}
-In this section we compare the performances and the weight matrices of the single-layer models trained by {\it Hebbian learning} and the {\it stochastic gradient descent} (SGD) on the subset of MNIST hand written digits dataset.
+In this section we compare the performances and the weight matrices of the single-layer models trained by {\it Hebbian learning} and the {\it stochastic gradient descent} (SGD) on the subsets of MNIST hand written digits dataset.
 \subsection{Hebbian learning}
 In the Hebbian learning setting the weights are set as follows
 \begin{equation} \label{Hebbian_weights}
@@ -108,7 +126,7 @@ To find the predicted probabilities of different classes, one can apply softmax 
 
 Note that expression (\ref{Hebbian_weights}) can be regarded as a single-epoch online learning (learning with batch size of one) where the output layer is clamped to the one-hot encoded targets. In this setting there is no need to train the network for more than one epoch, as this does not affect the performance.
 
-\textcolor{blue}{It is interesting what kind of loss function is minimised by this Hebbian learning procedure... Maybe to train it as FF with only positive data and see what comes out...}
+\textcolor{blue}{It is interesting what kind of loss function is minimised by this Hebbian learning procedure...}
 
 \subsection{Softmax classifier}
 The output layer now computes the softmax function defined as
@@ -137,8 +155,53 @@ From expression (\ref{cross-entropy_derivative}) it is clear that the weight upd
 \end{equation}
 where the first term in the above expression corresponds to the Hebbian component of the weight update while the second introduces some bias that grows with the network's performance compensating Hebbian component once the optimal performance is reached. In contrast, in pure Hebbian learning, the weights grow indefinitely, \textcolor{red}{therefore, the bias of Hebbian learning depends on how it is regularised.}
 
+\begin{tcolorbox}[myquestionbox]
+Is it possible to improve the performance of Hebbian network by embedding the labels into higher-dimensional space (instead of 10 dimensions with one-hot encoding) to increase the number of tunable parameters?
+\end{tcolorbox}
 
-%% \bibliographystyle{unsrt}
-%% \bibliography{bibliography.bib}
+\section{Why hidden layers decrease Hebbian model performance}
+
+While adding the hidden layers increases the number of tunable parameters, Hidden layers obscure the input layer from the output layer in the following sense. Since the weights of the hidden layer are initialised randomly and the hidden layer's activity does not have any task-relevant loss function (it does not receive anything from the upstream layers), the dynamics of the weights under Hebbian learning is completely determined by the random initialisation of the input-to-hidden weight matrix. (This explains the variability in performance we observe from trial to trial.) The output layer then tries to extract the structure from the activity of the hidden layer, but this is harder than looking directly at the input because the hidden layer didn't have any task-relevant objective function and thus didn't learn anything useful.
+
+\section{Forward-Forward algorithm}
+Forward-Forward (FF) algorithm is a contrastive learning algorithm in which every layer greedily (without caring about the performance of other layers) learns to predict whether the data is positive (real) or negative (unreal). One way of doing that is to set the class probability estimates as
+\begin{align*}
+  P_+(\prescript{}{l}{\mathbf y}) &= \sigma(\prescript{}{l}{\mathbf y}^2-\theta); \\
+  P_-(\prescript{}{l}{\mathbf y}) &= 1-P_+(\prescript{}{l}{\mathbf y}),
+\end{align*}
+$P_+$ and $P_-$ are the predicted probabilities of positive and negative data respectively, $\prescript{}{l}{\mathbf y}^2 \equiv \sum_{i=1}^{N_l}\prescript{}{l}{y}_i^2$ is the squared length of the layers activity, and $\sigma(z) \equiv \frac{\mathrm e^z}{1+\mathrm e^z}$ is a sigmoid function. To achieve high performance on this task every layer needs to learn to have high activity vector length for positive data and low activity vector length for negative data, thus the activity vector length can be regarded as a {\bf local} goodness function optimised by the layer at training.
+
+Since the goodness function is local to all layers, there is no need to propagate the error signal through the network backwards. Instead, every layer locally computes the error and updates its input weights on every training step, which is more biologically plausible and easier to implement in hardware.
+
+The only caveat, which is not clearly biologically plausible, is that, in order to prevent information about the goodness function of the upstream layers to go to the downstream layers and making it very easy for them to learn how to optimise their goodness\footnote{Without normalisation in the upstream layers, the downstream layers can learn to directly measure goodness of the upstream layers and repeat it. By doing so, they can achieve high performance without learning useful representations of the data. Since the goodness function is the length of the activity vector of the layer, $L^2$-normalisation entirely removes goodness information and the downstream layers are forced to extract useful representations from the relative activities of the units projecting to them.}
+
+\begin{figure}[h]
+  \begin{center}
+    \includegraphics[width=7cm]{img/FF_net.pdf}
+  \end{center}  
+  \caption{In FF algorithm every layer learns to predict independently (in some sense) whether the data is positive (real) or negative (unreal). Vertical rectangles indicate normalisation.}
+\end{figure}
+
+\subsection{FF algorithm and Hebbian/anti-Hebbian learning}
+In FF algorithm the goodnesses of all layers are optimised using stochastic gradient descent, but it turns out that the weight updates resulting from SGD are Hebbian for positive data and anti-Hebbian for negative data.
+
+To see this, consider a step of gradient descent in the layer $l+1$ from a single data sample
+\begin{align*}
+  \frac{\partial}{\partial\prescript{}{l+1}W_{\alpha\beta}}\sum_i \left(f\left(\sum_j\prescript{}{l+1}W_{ij}\prescript{}{l}{\widetilde{y}}_j\right)\right)^2 = 2f^\prime\left(\sum_j\prescript{}{l+1}W_{\alpha j}\prescript{}{l}{\widetilde{y}}_j\right)\prescript{}{l+1}{y}_\alpha\prescript{}{l}{\widetilde{y}}_\beta,
+  \end{align*}
+  where $f$ is the layers activation function (ReLU in \cite{hinton2022forwardforwardalgorithmpreliminaryinvestigations}), and tilda over the activity variable denotes normalisation (${\widetilde{y}}_j = y_j/\|\mathbf y\|,\ \ \|\mathbf y\| = \sqrt{\mathbf y^2}$). So for positive data
+  \begin{equation*}
+    \Delta \prescript{}{l+1}W_{\alpha\beta} = 2\epsilon f^\prime\left(\sum_j\prescript{}{l+1}W_{\alpha j}\prescript{}{l}{\widetilde{y}}_j\right)\prescript{}{l+1}{y}_\alpha\prescript{}{l}{\widetilde{y}}_\beta,
+  \end{equation*}
+  and for negative data
+  \begin{equation*}
+    \Delta \prescript{}{l+1}W_{\alpha\beta} = -2\epsilon f^\prime\left(\sum_j\prescript{}{l+1}W_{\alpha j}\prescript{}{l}{\widetilde{y}}_j\right)\prescript{}{l+1}{y}_\alpha\prescript{}{l}{\widetilde{y}}_\beta,
+  \end{equation*}
+  where $\epsilon$ is the learning rate.
+
+
+
+\bibliographystyle{unsrt}
+\bibliography{bibliography.bib}
 
 \end{document}
